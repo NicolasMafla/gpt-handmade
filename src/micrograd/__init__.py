@@ -1,2 +1,2 @@
-from .engine import Value
+from .engine import Value, Tensor
 from .nn import MLP
