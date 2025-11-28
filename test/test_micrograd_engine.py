@@ -1,5 +1,6 @@
 import torch
-from src.micrograd import Value
+import random
+from src.micrograd import Value, MLP
 
 def test_operations():
     a = Value(-4.0)
@@ -86,3 +87,30 @@ def test_deep_sanity_check():
     assert abs(gmg.data - gpt.data.item()) < tol
     assert abs(amg.grad - apt.grad.item()) < tol
     assert abs(bmg.grad - bpt.grad.item()) < tol
+
+def test_nn():
+    random.seed(111)
+
+    epochs = 30
+    lr = 0.1
+    n = MLP(nin=3, nouts=[4, 4, 1])
+
+    xs = [
+        [2.0, 3.0, -1.0],
+        [3.0, -1.0, 0.5],
+        [0.5, 1.0, 1.0],
+        [1.0, 1.0, -1.0],
+    ]
+    ys = [1.0, -1.0, -1.0, 1.0]
+
+    for k in range(epochs):
+        ypred = [n(x) for x in xs]
+        loss = sum((yout - ygt) ** 2 for ygt, yout in zip(ys, ypred))
+
+        n.zero_grad()
+        loss.backward()
+
+        for p in n.parameters():
+            p.data += -lr * p.grad
+
+    assert loss.data < 1
