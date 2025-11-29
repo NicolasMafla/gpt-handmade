@@ -144,7 +144,7 @@ class Tensor:
         return out
 
     def __repr__(self) -> str:
-        return f"Tensor(data={self.data}, grad={self.grad})"
+        return f"Tensor(data={self.data}, grad={self.grad}, op={self._op})"
 
     def __pow__(self, other: 'int | float') -> 'Tensor':
         assert isinstance(other, (int, float))
@@ -176,6 +176,17 @@ class Tensor:
 
     def __rtruediv__(self, other: 'float | Tensor') -> 'Tensor':
         return other * self**-1
+
+    def concat(self, other: 'Tensor') -> 'Tensor':
+        out = Tensor(data=np.concatenate((self.data, other.data)), _children=(self, other), _op='concat')
+
+        def _backward():
+            self.grad += out.grad[:len(self.grad)]
+            other.grad += out.grad[len(self.grad):]
+
+        out._backward = _backward
+
+        return out
 
     def sum(self) -> 'Tensor':
         out = Tensor(data=[self.data.sum()], _children=(self,), _op='sum')
