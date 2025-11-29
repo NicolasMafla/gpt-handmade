@@ -23,10 +23,25 @@ def test_operations():
     assert Lmg.data.item() == Lpt.data.item()
     assert np.allclose(wmg.grad, wpt.grad.numpy(), atol=1e-6)
 
+def test_matrices():
+    xmg = Tensor([[-4.0, 3.0], [-4.0, 2.0], [-4.0, 3.0]])
+    wmg = Tensor([[2.0, 1.0, -5.0], [2.0, 3.0, 0.0]])
+    Lmg = (wmg.matmul(xmg)).sum()
+    Lmg.backward()
+
+    xpt = torch.Tensor([[-4.0, 3.0], [-4.0, 2.0], [-4.0, 3.0]]).double()
+    wpt = torch.Tensor([[2.0, 1.0, -5.0], [2.0, 3.0, 0.0]]).double()
+    wpt.requires_grad = True
+    Lpt = (wpt.matmul(xpt)).sum()
+    Lpt.backward()
+
+    assert Lmg.data.item() == Lpt.data.item()
+    assert np.allclose(wmg.grad, wpt.grad.numpy(), atol=1e-6)
+
 def test_nn():
     np.random.seed(0)
 
-    epochs = 50
+    epochs = 100
     lr = 0.001
 
     n = TensorMLP(nin=3, nouts=[4, 5, 1])
@@ -49,7 +64,9 @@ def test_nn():
         for p in n.parameters():
             p.data += -lr * p.grad
 
-        print(loss.data.item())
+        if k % 10 == 0:
+            print(f'loss: {loss.data.item()}')
 
-    print(ypred)
-    assert loss.data.item() < 5
+    print(f'true: {ys}')
+    print(f'predictions: {[ypred.data.item() for ypred in ypred]}')
+    assert loss.data.item() < 1

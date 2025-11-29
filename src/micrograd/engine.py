@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from typing import List, Iterable
+from typing import Iterable
 
 class Value:
     def __init__(self, data: int | float, _children: tuple=(), _op: str=''):
@@ -114,7 +114,7 @@ class Value:
             v._backward()
             
 class Tensor:
-    def __init__(self, data: Iterable[float], _children: tuple=(), _op: str=''):
+    def __init__(self, data: Iterable, _children: tuple=(), _op: str=''):
         self.data = np.array(data, dtype=np.float64)
         self.grad = np.zeros_like(self.data)
         self._backward = lambda: None
@@ -177,6 +177,16 @@ class Tensor:
     def __rtruediv__(self, other: 'float | Tensor') -> 'Tensor':
         return other * self**-1
 
+    def matmul(self, other):
+        out = Tensor(data=self.data @ other.data, _children=(self, other), _op='@')
+
+        def _backward():
+            self.grad += out.grad @ other.data.T
+            other.grad += self.data.T @ out.grad
+        out._backward = _backward
+
+        return out
+
     def concat(self, other: 'Tensor') -> 'Tensor':
         out = Tensor(data=np.concatenate((self.data, other.data)), _children=(self, other), _op='concat')
 
@@ -208,7 +218,7 @@ class Tensor:
         return out
 
     def relu(self) -> 'Tensor':
-        out = Tensor(data=np.where(self.data < 0, 0, self.data), _children=(self,), _op='ReLU')
+        out = Tensor(data=np.maximum(0, self.data), _children=(self,), _op='ReLU')
 
         def _backward():
             self.grad += (out.data > 0) * out.grad
@@ -240,7 +250,7 @@ class Tensor:
                 topo.append(node)
 
         build_topo(self)
+        self.grad = np.ones_like(self.data)
 
-        self.grad = 1
         for v in reversed(topo):
             v._backward()
