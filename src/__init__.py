@@ -1,1 +1,1 @@
-from .micrograd import Value, Tensor, MLP, TensorNeuron, TensorLayer, TensorMLP
+from .micrograd import Value, Tensor, MLP, TensorLayer, TensorMLP

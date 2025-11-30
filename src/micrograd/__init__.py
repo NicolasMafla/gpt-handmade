@@ -1,2 +1,2 @@
 from .engine import Value, Tensor
-from .nn import MLP, TensorNeuron, TensorLayer, TensorMLP
+from .nn import MLP, TensorLayer, TensorMLP

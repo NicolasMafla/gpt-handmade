@@ -116,6 +116,8 @@ class Value:
 class Tensor:
     def __init__(self, data: Iterable, _children: tuple=(), _op: str=''):
         self.data = np.array(data, dtype=np.float64)
+        if len(self.data.shape) == 1:
+            self.data = self.data.reshape(1, -1)
         self.grad = np.zeros_like(self.data)
         self._backward = lambda: None
         self._prev = set(_children)
@@ -177,7 +179,7 @@ class Tensor:
     def __rtruediv__(self, other: 'float | Tensor') -> 'Tensor':
         return other * self**-1
 
-    def matmul(self, other):
+    def matmul(self, other: 'Tensor') -> 'Tensor':
         out = Tensor(data=self.data @ other.data, _children=(self, other), _op='@')
 
         def _backward():

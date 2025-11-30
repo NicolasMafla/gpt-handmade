@@ -70,38 +70,22 @@ class TensorModule(ABC):
     def parameters(self) -> List[Tensor]:
         pass
 
-class TensorNeuron(TensorModule):
-    def __init__(self, nin: int, nonlin: bool=True):
-        self.w = Tensor(data=np.random.uniform(low=-1.0, high=1.0, size=nin))
-        self.b = Tensor(data=np.zeros(nin))
+class TensorLayer(TensorModule):
+    def __init__(self, nin: int, nout: int, nonlin: bool=True):
+        self.w = Tensor(data=np.random.uniform(low=-1.0, high=1.0, size=(nin, nout)))
+        self.b = Tensor(data=np.zeros(nout))
         self.nonlin = nonlin
 
     def __call__(self, x: Tensor) -> Tensor:
-        act = (self.w * x + self.b).sum()
-        return act.relu() if self.nonlin else act
+        a = x.matmul(self.w)
+        out = a + self.b
+        return out.relu() if self.nonlin else out
 
     def parameters(self) -> List[Tensor]:
-        return [self.w] + [self.b]
+        return [self.w, self.b]
 
     def __repr__(self) -> str:
-        return f"{'ReLU' if self.nonlin else 'Linear'}TensorNeuron({len(self.w.data)})"
-
-class TensorLayer(TensorModule):
-    def __init__(self, nin: int, nout: int, **kwargs):
-        self.neurons = [TensorNeuron(nin=nin, **kwargs) for _ in range(nout)]
-
-    def __call__(self, x: Tensor) -> Tensor:
-        outs = [n(x) for n in self.neurons]
-        out = reduce(lambda x, y: x.concat(y), outs)
-        return out
-
-    def parameters(self) -> List[Tensor]:
-        l_params = [n.parameters() for n in self.neurons]
-        params = list(chain.from_iterable(l_params))
-        return params
-
-    def __repr__(self) -> str:
-        return f"Layer of [{', '.join(str(n) for n in self.neurons)}]"
+        return f"{'ReLU' if self.nonlin else 'Linear'}Layer({self.w.data.shape[0]} -> {self.w.data.shape[1]})"
 
 class TensorMLP(TensorModule):
     def __init__(self, nin: int, nouts: List[int]):

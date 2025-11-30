@@ -1,8 +1,6 @@
 import torch
-import random
 import numpy as np
-from functools import reduce
-from src.micrograd import Tensor, TensorNeuron, TensorLayer, TensorMLP
+from src.micrograd import Tensor, TensorMLP
 
 def test_operations():
     xmg = Tensor([-4.0, 3.0, 6.0])
@@ -65,7 +63,7 @@ def test_nn():
             p.data += -lr * p.grad
 
         if k % 10 == 0:
-            print(f'loss: {loss.data.item()}')
+            print(f'epoch [{k}] loss: {loss.data.item()}')
 
     print(f'true: {ys}')
     print(f'predictions: {[ypred.data.item() for ypred in ypred]}')
