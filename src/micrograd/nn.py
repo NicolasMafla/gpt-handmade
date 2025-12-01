@@ -71,26 +71,37 @@ class TensorModule(ABC):
         pass
 
 class TensorLayer(TensorModule):
-    def __init__(self, nin: int, nout: int, nonlin: bool=True):
+    def __init__(self, nin: int, nout: int, activation: str='Linear'):
         self.w = Tensor(data=np.random.uniform(low=-1.0, high=1.0, size=(nin, nout)))
         self.b = Tensor(data=np.zeros(nout))
-        self.nonlin = nonlin
+        self.activation = activation
 
     def __call__(self, x: Tensor) -> Tensor:
-        a = x.matmul(self.w)
-        out = a + self.b
-        return out.relu() if self.nonlin else out
+        z = x.matmul(self.w) + self.b
+        if self.activation == 'Relu':
+            return z.relu()
+        elif self.activation == 'Tanh':
+            return z.tanh()
+        else:
+            return z
 
     def parameters(self) -> List[Tensor]:
         return [self.w, self.b]
 
     def __repr__(self) -> str:
-        return f"{'ReLU' if self.nonlin else 'Linear'}Layer({self.w.data.shape[0]} -> {self.w.data.shape[1]})"
+        return f"{self.activation}Layer({self.w.data.shape[0]} -> {self.w.data.shape[1]})"
 
 class TensorMLP(TensorModule):
     def __init__(self, nin: int, nouts: List[int]):
         sz = [nin] + nouts
-        self.layers = [TensorLayer(nin=sz[i], nout=sz[i+1], nonlin=i!=len(nouts)-1) for i in range(len(nouts))]
+        self.layers = [TensorLayer(nin=sz[i], nout=sz[i+1], activation='Relu') for i in range(len(nouts))]
+        self.layers[-1].activation = 'Linear'
+
+    @classmethod
+    def from_layers(cls, layers: list[TensorLayer]):
+        obj = cls.__new__(cls)
+        obj.layers = layers[:]
+        return obj
 
     def __call__(self, x: Tensor) -> Tensor:
         for layer in self.layers:
